@@ -1,5 +1,4 @@
-import { Controller, Param, Get, Post, Put, Delete } from '@nestjs/common';
-import { Body } from '@nestjs/common/decorators';
+import { Controller, Param, Body, Get, Post, Put, Delete } from '@nestjs/common';
 import { CommentsService, Comment, CommentEdit } from './comments.service';
 
 @Controller('comments')
@@ -12,27 +11,16 @@ export class CommentsController {
       return this.commentsService.create(idNewsInt, comment)
     }
 
-    //--------------------------------------------------
-    // @Put('/api/:idNews/:idComment')
-    // edit(
-    //   @Param('idNews') idNews: string,
-    //   @Param('idComment') idComment: string,
-    //   @Body() comment: CommentEdit,
-    // ) {
-    //   const idNewsInt = parseInt(idNews);
-    //   const idCommentInt = parseInt(idComment);
-    //   return this.commentsService.edit(idNewsInt, idCommentInt, comment);
-    // }
-
-  @Post('/api/:idNews/:idComment')
-    editComments(@Param('idNews') idNews: string, @Param('idComment') idComment: string, @Body() comment: CommentEdit) 
-    {
+    @Put('/api/:idNews/:idComment')
+    edit(
+      @Param('idNews') idNews: string,
+      @Param('idComment') idComment: string,
+      @Body() comment: CommentEdit,
+    ) {
       const idNewsInt = parseInt(idNews);
-      const idIntComment = parseInt(idComment);
-      const isEdited = this.commentsService.edit(idNewsInt, idIntComment, comment); 
-      return isEdited ? 'Комментарий отредактирован' : 'Комментарий не отредактирован - передан неверный id';
-  } 
-//--------------------------------------------------
+      const idCommentInt = parseInt(idComment);
+      return this.commentsService.edit(idNewsInt, idCommentInt, comment);
+    }
 
   @Get('/api/:idNews')
     get(@Param('idNews') idNews: string) {

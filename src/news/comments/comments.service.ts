@@ -31,24 +31,20 @@ export class CommentsService {
     return "Комментарий добавлен";
   }
 
-//--------------------------------------------------
-edit(idNews: number, idComment: number, comment: CommentEdit) {
-  const indexComment =
-    this.comments[idNews]?.findIndex((c) => c.id === idComment);
-  
-    if (!this.comments[idNews] || indexComment) {
-    return false;
+  edit(idNews: number, idComment: number, comment: CommentEdit) {
+    const indexComment =
+      this.comments[idNews]?.findIndex((c) => c.id === idComment);
+    
+      if (!this.comments[idNews] || indexComment) {
+      return false;
+    }
+
+    this.comments[idNews][indexComment] = {
+      ...this.comments[idNews][indexComment],
+      comment,
+    };
+    return 'Комментарий создан';
   }
-
-  this.comments[idNews][indexComment] = {
-    ...this.comments[idNews][indexComment],
-    comment,
-  };
-  return 'Комментарий был создан';
-}
-
-
-//------------------------------------------------------
 
   find(idNews: number): Comment[] | null {
       return this.comments[idNews] || null;
