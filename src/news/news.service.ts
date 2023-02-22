@@ -29,7 +29,7 @@ export class NewsService {
       title: "news blyat title'",
       description: "news_desc",
       author: 'petrov',
-      cover: "https://mobimg.b-cdn.net/v3/fetch/94/94c56e15f13f1de4740a76742b0b594f.jpeg"
+      cover: "/31e88f97-74e8-4df7-84a0-a9188bb67f28.gif"
     }
   ];
 
