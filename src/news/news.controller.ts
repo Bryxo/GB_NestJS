@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Body, Post, Put, Delete,  Res,  UseInterceptors,  UploadedFile, HttpException, HttpStatus, Render } from '@nestjs/common';
 import { NewsService, News, NewsEdit  } from './news.service';
 import { CommentsService } from './comments/comments.service';
-import { renderTemplate } from 'src/views/template';
+import { renderTemplate } from 'src/views/news/template';
 import { renderNewsDetail } from '../views/news/news-detail';
 import { CreateNewsDto } from './dtos/create-news-dto';
 import { EditNewsDto } from './dtos/edit-news-dto';
@@ -9,6 +9,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { HelperFileLoader } from '../../utils/HelperFileLoader';
 import { MailService } from '../mail/mail.service';
+import { NewsEntity } from './news.entity';
 
 const PATH_NEWS = '/news-static/';
 HelperFileLoader.path = PATH_NEWS;
@@ -23,28 +24,40 @@ export class NewsController {
   ) {}
 
   @Get('/api/:id')
-  getNews(@Param('id') id: string): News {
-    const idInt = parseInt(id);
-    const news = this.newsService.findById(idInt);
-    const comments = this.commentsService.find(idInt);
+  async get(@Param('id', ParseIntPipe) id: number): Promise<NewsEntity> {
+    const news = this.newsService.findById(id);
+    if (!news) {
+      throw new HttpException(
+        {
+          status: HttpStatus.NOT_FOUND,
+          error: 'Новость была не найдена',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
 
-    return {
-      ...news,
-      comments,
-    };
+    return news;
   }
 
   @Get('/detail/:id')
-  getDetailView(@Param('id') id: string) {
-    const inInt = parseInt(id);
-    const news = this.newsService.findById(inInt);
-    const comments = this.commentsService.find(inInt);
-    const content = renderNewsDetail(news, comments);
+  @Render('news-detail')
+  async getDetailView(@Param('id', ParseIntPipe) id: number) {
+    const news = await this.newsService.findById(id);
+    if (!news) {
+      throw new HttpException(
+        {
+          status: HttpStatus.NOT_FOUND,
+          error: 'Новость была не найдена',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    const comments = this.commentsService.find(id);
 
-    return renderTemplate(content, {
-      title: news.title,
-      description: news.description,
-    });
+    return {
+      news,
+      comments,
+    };
   }
 
   @Post("/api")
@@ -57,7 +70,7 @@ export class NewsController {
     }),
   )
   
-  async create(@Body() news: CreateNewsDto,  @UploadedFile() cover) : Promise<News> {
+  async create(@Body() news: CreateNewsDto,  @UploadedFile() cover) : Promise<NewsEntity> {
     const fileExtension = cover.originalname.split('.').reverse()[0];
     if (!fileExtension || !fileExtension.match(/(jpg|jpeg|png|gif)$/)) {
       throw new HttpException(
@@ -72,43 +85,50 @@ export class NewsController {
     if (cover?.filename) {
       news.cover = PATH_NEWS + cover.filename;
     }
-    const createdNews = this.newsService.create(news);
-    await this.mailService.sendNewNewsForAdmins(
-      [
-        'ivanivii@yandex.ru',
-        'ivanivii@gmail.com',
-        'ivanivii@mail.ru',
-        'ivanivii@rambler.ru',
-      ],
-      createdNews,
-    );
+    const createdNews = await this.newsService.create(news);
     return createdNews;
   } 
 
   @Post('/api/:id')
-  editNews(@Param('id') id: string, @Body() news: EditNewsDto): string {
-    const idInt = parseInt(id);
-    const isEdited = this.newsService.edit(idInt, news); 
-    return isEdited ? 'Новость отредактирована' : 'Новость не отредактирована - передан неверный id';
+  async edit(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() news: EditNewsDto,
+  ): Promise<NewsEntity> {
+    const newsEditable = await this.newsService.edit(id, news);
+    if (!news) {
+      throw new HttpException(
+        {
+          status: HttpStatus.NOT_FOUND,
+          error: 'Новость была не найдена',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return newsEditable;
   } 
 
   @Delete('/api/:id') //put
-  removeNews(@Param('id') id: string): string {
-    const idInt = parseInt(id);
-    const isRemoved = this.newsService.remove(idInt);
-    return isRemoved ? 'Новость удалена' : 'Новость не удалена - передан неверный id'
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<string> {
+    const isRemoved = await this.newsService.remove(id);
+    throw new HttpException(
+      {
+        status: HttpStatus.OK,
+        error: isRemoved ? 'Новость удалена' : 'Передан неверный идентификатор',
+      },
+      HttpStatus.OK,
+    );
   } 
 
   @Get('/api/data/:all') //back
-  getAll(): News[] {
-    const news = this.newsService.findAll();
-    return news;
+  async getAll(): Promise<NewsEntity[]> {
+    return this.newsService.findAll();
   }
 
   @Get('/all') //front
   @Render('news-list')
-  getAllView() {
-    const news = this.newsService.findAll();
+  async getAllView() {
+    const news = await this.newsService.findAll();
     // const content = renderNewsAll(news);
     // return renderTemplate(content, {title: "Список новостей", description: "Новости - ХОБОСТИ"});
     return { news, title: 'Список новостей!' };

@@ -25,7 +25,7 @@ export class CommentsService {
     if (!this.comments[idNews]) {
       this.comments[idNews] = []
     }
-    const newComment = {...comment, id: Date.now()};
+    const newComment = {...comment, id: 1};
     return newComment;
     //return "Комментарий добавлен";
   }
