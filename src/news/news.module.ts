@@ -6,7 +6,8 @@ import { MailModule } from '../mail/mail.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NewsEntity } from './news.entity';
 import { UsersModule } from '../users/users.module';
-
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from '../auth/role/roles.guard';
 
 @Module({
   controllers: [NewsController],
@@ -16,5 +17,6 @@ import { UsersModule } from '../users/users.module';
       MailModule,
       UsersModule,
     ],
+    exports: [TypeOrmModule.forFeature([NewsEntity]), NewsService],
 })
 export class NewsModule {}
