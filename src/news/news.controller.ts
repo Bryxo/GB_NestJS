@@ -56,7 +56,7 @@ export class NewsController {
         HttpStatus.NOT_FOUND,
       );
     }
-    return news;
+    return { news };
   }
 
   @UseGuards(JwtAuthGuard)

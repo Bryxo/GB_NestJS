@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { HttpException, HttpStatus, CreateCommentDto } from './dtos/create-comment-dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 //import { News } from '../news.interface';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CommentsEntity } from './comments.entity';
@@ -29,12 +29,14 @@ export class CommentsService {
     private readonly commentsRepository: Repository<CommentsEntity>,
     private readonly newsService: NewsService,
     private readonly userService: UsersService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
   private readonly comments = [];
 
   async create(
     idNews: number,
-    comment: CreateCommentDto,
+    message: string,
+    idUser: number,
   ): Promise<CommentsEntity> {
     const _news = await this.newsService.findById(idNews);
     if (!_news) {
@@ -46,7 +48,7 @@ export class CommentsService {
         HttpStatus.NOT_FOUND,
       );
     }
-    const _user = await this.userService.findById(comment.userId);
+    const _user = await this.userService.findById(idUser);
     if (!_user) {
       throw new HttpException(
         {
@@ -60,7 +62,7 @@ export class CommentsService {
   const commentEntity = new CommentsEntity();
   commentEntity.news = _news;
   commentEntity.user = _user;
-  commentEntity.message = comment.message;
+  commentEntity.message = message;
     
   return this.commentsRepository.save(commentEntity);
     }
@@ -79,7 +81,10 @@ export class CommentsService {
   }
 
   async remove(idComment: number): Promise<CommentsEntity> {
-    const _comment = await this.commentsRepository.findOne(idComment);
+    const _comment = await this.commentsRepository.findOne({
+      where: { id: idComment },
+      relations: ['news'],
+    });
     if (!_comment) {
       throw new HttpException(
         {
@@ -90,7 +95,13 @@ export class CommentsService {
       );
     }
 
-    return this.commentsRepository.remove(_comment);
+    const comment = await this.commentsRepository.remove(_comment);
+    this.eventEmitter.emit('comment.remove', {
+      commentId: idComment,
+      newsId: _comment.news.id,
+    });
+
+    return comment;
   }
 
   async removeAll(idNews) {
